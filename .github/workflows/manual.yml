@@ -79,6 +79,6 @@ jobs:
     - run: poetry run scrape ${{ inputs.start }} ${{ inputs.end }}
 
     # publish the generated data files to github
-    - uses: mikeal/publish-to-github-action@main
+    - uses: mikeal/publish-to-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub sets this for you
