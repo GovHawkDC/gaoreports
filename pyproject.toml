@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "gaoreports"
+version = "0.1.0"
+description = ""
+authors = ["Tim Showers <showerst@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.31.0"
+lxml = "^4.9.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+scrape = "gaoreports.scrape:scrape"
