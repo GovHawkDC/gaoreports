@@ -1,0 +1,85 @@
+# This is a basic workflow that is manually triggered
+# Heavily based on https://jacobian.org/til/github-actions-poetry/
+name: Manually run scraper
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      start:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Start Date'
+        # Default value if no value is explicitly provided
+        # Input has to be provided for the workflow to run
+        required: true
+        # The data type of the input
+        type: string
+      end:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'Start Date'
+        # Default value if no value is explicitly provided
+        # Input has to be provided for the workflow to run
+        required: true
+        # The data type of the input
+        type: string
+
+
+jobs:
+  scrape:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
+    # from installing Poetry every time, which can be slow. Note the use of the Poetry version
+    # number in the cache key, and the "-0" suffix: this allows you to invalidate the cache
+    # manually if/when you want to upgrade Poetry, or if something goes wrong. This could be
+    # mildly cleaner by using an environment variable, but I don't really care.
+    - name: cache poetry install
+      uses: actions/cache@v2
+      with:
+        path: ~/.local
+        key: poetry-1.6.1-0
+
+    - uses: snok/install-poetry@v1
+      with:
+        version: 1.6.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: cache deps
+      id: cache-deps
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: pydeps-${{ hashFiles('**/poetry.lock') }}
+
+    # Install dependencies. `--no-root` means "install all dependencies but not the project
+    # itself", which is what you want to avoid caching _your_ code. The `if` statement
+    # ensures this only runs on a cache miss.
+    - run: poetry install --no-interaction --no-root
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+
+    # Now install _your_ project. This isn't necessary for many types of projects -- particularly
+    # things like Django apps don't need this. But it's a good idea since it fully-exercises the
+    # pyproject.toml and makes that if you add things like console-scripts at some point that
+    # they'll be installed and working.
+    - run: poetry install --no-interaction
+
+    # And finally run tests. I'm using pytest and all my pytest config is in my `pyproject.toml`
+    # so this line is super-simple. But it could be as complex as you need.
+    - run: poetry run scrape ${{ inputs.start }} ${{ inputs.end }}
+
+    # publish the generated data files to github
+    - uses: mikeal/publish-to-github-action@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub sets this for you
