@@ -17,8 +17,7 @@ on:
         # The data type of the input
         type: string
       end:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Start Date'
+        description: 'End Date'
         # Default value if no value is explicitly provided
         # Input has to be provided for the workflow to run
         required: true
