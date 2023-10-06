@@ -9,8 +9,10 @@ import requests
 
 logging.basicConfig(level=logging.INFO)
 
+
 def clean_id(id: str) -> str:
     return id.replace("/", "-")
+
 
 def process_item(item: lxml.html.HtmlElement) -> None:
     link = item.xpath(".//h4[contains(@class,'c-search-result__header')]/a")[0]
@@ -91,6 +93,7 @@ def process_item(item: lxml.html.HtmlElement) -> None:
 
     save(output)
 
+
 def save(output):
     date = datetime.datetime.strptime(output["published"], "%Y-%m-%dT%H:%M:%SZ")
     date = datetime.datetime.strftime(date, "%Y-%m-%d")
@@ -154,6 +157,7 @@ def search_page(start: str, end: str, page_number: int) -> bool:
             else:
                 return True
     return False
+
 
 def scrape() -> None:
     parser = argparse.ArgumentParser()
