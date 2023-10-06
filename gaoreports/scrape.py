@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 def clean_id(id: str) -> str:
-    return id.replace("/", "-")
+    # NSIAD/AIMD-00-329 is nsiadaimd-00-329
+    return id.replace("/", "")
 
 
 def process_item(item: lxml.html.HtmlElement) -> None:
