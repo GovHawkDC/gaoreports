@@ -142,6 +142,10 @@ def search_page(start: str, end: str, page_number: int) -> bool:
     logging.info("Fetching page %d", page_number)
     response = requests.post("https://www.gao.gov/views/ajax", params=params, data=data)
 
+    if response.status_code != 200:
+        logging.error(f"Got HTTP {response.status_code} response code, ending scrape")
+        return False
+
     rows = json.loads(response.content)
 
     for row in rows:
