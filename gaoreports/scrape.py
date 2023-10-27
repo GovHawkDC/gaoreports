@@ -111,57 +111,38 @@ def save(output):
 
 
 def search_page(start: str, end: str, page_number: int) -> bool:
-    params = {
-        "_wrapper_format": "drupal_ajax",
-        "f[0]": f"date:start+{start}+end+{end}",
-    }
+    search_url = "https://www.gao.gov/reports-testimonies"
 
-    data = {
-        "view_name": "search_api_reports_and_testimonies_search",
-        "view_display_id": "block_1",
-        "view_args": "",
-        "view_path": "/node/376",
-        "view_base_path": "search-api-reports-and-testimonies-search",
-        "view_dom_id": "00d5e1ae1c6bf2a5b7b2fd277d884127f2cec83d79042673c192bf801600a848",
-        "pager_element": "0",
-        "viewsreference[data][argument]": "",
-        "viewsreference[data][limit]": "",
-        "viewsreference[data][offset]": "",
-        "viewsreference[data][pager]": "",
-        "viewsreference[data][title]": "",
-        "viewsreference[parent_entity_type]": "paragraph",
-        "viewsreference[parent_entity_id]": "8921",
-        "viewsreference[parent_field_name]": "field_view",
-        "page": str(page_number),
-        "_drupal_ajax": "1",
-        "ajax_page_state[theme]": "gao",
-        "ajax_page_state[theme_token]": "",
-        "ajax_page_state[libraries]": "back_to_top/back_to_top_icon,back_to_top/back_to_top_js,blazy/bio.ajax,classa11y/base,classa11y/lib--bootstrap,classa11y/lib--font-awesome,classy/base,classy/messages,core/drupal.date,core/normalize,extlink/drupal.extlink,facets/drupal.facets.checkbox-widget,facets/drupal.facets.views-ajax,facets/soft-limit,gao/base,gao/block,gao/block--core,gao/block--core--page-title-block,gao/block--facets,gao/block--facets--facet-blockrt-by-agency,gao/block--facets--facet-blockrt-by-date,gao/block--facets--facet-blockrt-by-topic,gao/block--gao-core,gao/block--gao-core--fed-depository-lib-banner,gao/block--gao-core--gao-footer-info,gao/block--gao-core--gao-newsletter-signup,gao/block--gao-core--post-title-info,gao/block--gao-search,gao/block--gao-search--date-range-custom-facet,gao/block--gao-search--search-block,gao/block--system,gao/block--system--system-breadcrumb-block,gao/block--system--system-main-block,gao/block--system--system-menu-blockfooter,gao/block--system--system-menu-blockjump-to,gao/block--system--system-menu-blockmain,gao/block--system--system-menu-blockreports-testimonies,gao/block--system--system-messages-block,gao/filter-blocks,gao/node,gao/node--full,gao/node--full--page,gao/paragraph,gao/paragraph--default,gao/paragraph--default--embed-view,gao/region,gao/region--breadcrumbs,gao/region--content,gao/region--footer-1,gao/region--footer-2,gao/region--help,gao/region--navigation,gao/region--page-title,gao/region--post-title,gao/region--sidebar-one,gao/region--sidebar-one-extra,gao/region--sidebar-two,gao/region--upper-footer,gao/view,gao/view--search-api-reports-and-testimonies-search,gao/view--search-api-reports-and-testimonies-search--block-1,google_tag/gtag,google_tag/gtag.ajax,google_tag/gtm,paragraphs/drupal.paragraphs.unpublished,system/base,views/views.ajax,views/views.module",
+    start = datetime.datetime.strptime(start, "%Y-%m-%d")
+    end = datetime.datetime.strptime(end, "%Y-%m-%d")
+
+    start = round(datetime.datetime.timestamp(start))
+    end = round(datetime.datetime.timestamp(end))
+
+    params = {
+        "page": page_number,
+        "f[0]": f"rt_date_range_gui:(min:{start},max:{end})",
     }
 
     logging.info("Fetching page %d", page_number)
-    response = requests.post("https://www.gao.gov/views/ajax", params=params, data=data)
+    response = requests.get(search_url, params=params)
 
     if response.status_code != 200:
         logging.error(f"Got HTTP {response.status_code} response code, ending scrape")
         return False
 
-    rows = json.loads(response.content)
+    page = lxml.html.fromstring(response.content)
+    page.make_links_absolute(search_url)
 
+    rows = page.xpath("//div[contains(@class,'gao-filter')]//div[contains(@class,'views-row')]")
     for row in rows:
-        if row["command"] == "insert" and row["data"] != "":
-            page = lxml.html.fromstring(row["data"])
-            page.make_links_absolute("https://www.gao.gov")
-            items = page.xpath("//div[contains(@class,'views-row')]")
-            for item in items:
-                process_item(item)
+        process_item(row)
 
-            if len(items) == 0:
-                logging.info("Got empty response, ending scrape")
-                return False
-            else:
-                return True
-    return False
+    if len(rows) == 0:
+        logging.info("Got search page, ending scrape")
+        return False
+    else:
+        return True
 
 
 def scrape() -> None:
