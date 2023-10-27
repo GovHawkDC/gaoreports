@@ -139,7 +139,7 @@ def search_page(start: str, end: str, page_number: int) -> bool:
         process_item(row)
 
     if len(rows) == 0:
-        logging.info("Got search page, ending scrape")
+        logging.info("Got empty search results page, ending scrape")
         return False
     else:
         return True
